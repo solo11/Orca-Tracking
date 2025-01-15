@@ -1,0 +1,8 @@
+beautifulsoup4
+markdownify
+openai
+duckdb
+polars
+gspread
+gspread_dataframe
+dotenv
