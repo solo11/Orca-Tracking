@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import markdown
+import markdown as md
 
 def extract_markdown_from_orca_sightings():
     # Send a GET request to orcanetwork.org
@@ -19,7 +19,7 @@ def extract_markdown_from_orca_sightings():
 
     for content in all_content:
         res += str(content)
-        mark_d = markdown.markdown(str(content))
+        mark_d = md(str(content))
         if mark_d.strip() == "" or '-***' not in mark_d:
             continue
         md_list.append(mark_d)
