@@ -37,7 +37,9 @@ CREATE OR REPLACE TABLE orca_sightings_cleaned AS
               ELSE CAST("Number of Animals" AS INT)
           END AS "Number of Animals",
           "Direction of Travel",
-          Raw_Text
+          Raw_Text,
+          current_date as inserted_on
+
    FROM orca_sightings_raw)
 """
 
@@ -80,7 +82,8 @@ CREATE OR REPLACE TABLE orca_sightings_cleaned_intermediate AS
               ELSE CAST("Number of Animals" AS INT)
           END AS "Number of Animals",
           "Direction of Travel",
-          Raw_Text
+          Raw_Text,
+          current_date as inserted_on
    FROM orca_sightings_raw_intermediate)
 """
 
