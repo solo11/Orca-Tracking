@@ -14,16 +14,16 @@ import SQLstatements
 
 # Load ENV variables
 load_dotenv()
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-MOTHERDUCK_TOKEN = os.getenv('MOTHERDUCK_TOKEN')
-GOOGLE_SHEETS_DOCUMENT_ID = os.getenv('SHEETS_DOCUMENT_ID')
+OPENAI_API_KEY = userdata.get('OPENAI_API_KEY')
+MOTHERDUCK_TOKEN = userdata.get('motherduck_token')
+GOOGLE_SHEETS_DOCUMENT_ID = userdata.get('google_sheets_file')
 
 # Get data
 markdown_list = extract_markdown_from_orca_sightings()
 
 # Change the index of md_list depending upon how many days of incremental load you need. Ex: index 0 for 1 day load, index 1 for 2 days load
 # Default = 1
-md_list_incremental = markdown_list[1]
+md_list_incremental = markdown_list[:1]
 
 # Open AI function calling
 # OPENAI data Extraction
@@ -35,7 +35,7 @@ system_prompt = '''
    For the latitude and longitude column use the location to infer these values
    These are the column defications:
    "Date": "The date when the orca or whale sighting occurred, formatted as MM/DD/YYYY. verify the date is correct from the input provided, all the sightings in December are from the year 2024 and all the sightings in January are from the year 2025",
-    "Time": "The time of the sighting, typically in 12-hour format with AM/PM indication.",
+    "Time": "The time of the sighting, typically in 12-hour format with AM/PM indication. Time is often provided in the sightings report extract the data from it",
     "Species": "The species or specific ecotype of whale or orca observed (e.g., Southern Residents, Bigg's).",
     "Location": "The reported location of the sighting, often including landmarks or geographic areas.",
     "Latitude": "The latitude coordinate of the sighting location, measured in decimal degrees. only contain a numeric value",
@@ -199,6 +199,8 @@ con.sql(query)
 query = SQLstatements.merge_intermediate_tables
 con.sql(query)
 
+print("Data loaded to MotherDuck")
+
 # Upload to google sheets
 gc = gspread.service_account(filename='access.json')
 
@@ -206,7 +208,25 @@ export_df = con.sql("select * from orca_sightings_cleaned").df()
 sh= gc.open_by_key(GOOGLE_SHEETS_DOCUMENT_ID)
 wrk = sh.get_worksheet(0)
 
+# extract and append
 old_data = get_as_dataframe(wrk)
-updated_data = old_data.append(export_df)
+updated_data = pd.concat([old_data,export_df])
+
+# sort by date and add an index column
+updated_data['date'] = pd.to_datetime(updated_data['date'])
+updated_data.sort_values(by='date', ascending=False, inplace=True)
+
+indexes = []
+for i in range(len(updated_data)):
+  indexes.append(i)
+
+if('Index' in updated_data.columns):
+  updated_data.drop(columns=['Index'], inplace=True)
+updated_data.insert(0, 'Index', indexes)
+
+# updated_data.set_index('Index', inplace=True)
+
 set_with_dataframe(worksheet=wrk, dataframe=updated_data, include_index=False,
 include_column_header=True, resize=True)
+
+print("Data uploaded to Google Sheets")
