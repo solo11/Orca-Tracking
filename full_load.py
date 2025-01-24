@@ -202,5 +202,21 @@ wrk = sh.get_worksheet(0)
 wrk.clear()
 export_df = con.sql("select * from orca_sightings_cleaned").df()
 wrk = sh.get_worksheet(0)
+
+# sort by date and add an index column
+export_df['date'] = pd.to_datetime(export_df['date'])
+export_df.sort_values(by='date', ascending=False, inplace=True)
+
+indexes = []
+for i in range(len(updated_data)):
+  indexes.append(i)
+
+if('Index' in export_df.columns):
+  export_df.drop(columns=['Index'], inplace=True)
+export_df.insert(0, 'Index', indexes)
+
+
 set_with_dataframe(worksheet=wrk, dataframe=export_df, include_index=False,
 include_column_header=True, resize=True)
+
+
